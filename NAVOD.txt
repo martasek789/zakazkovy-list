@@ -1,0 +1,9 @@
+INSTALACE PWA - Zakázkový list
+1) Nahraj všechny soubory do jedné složky na webhosting s HTTPS
+   (GitHub Pages, Netlify, Cloudflare Pages, firemní web...).
+   PWA nefunguje při otevření souboru z disku ani přes http://.
+2) Otevři adresu na telefonu.
+   Android (Chrome): menu ⋮ > Přidat na plochu / Nainstalovat aplikaci.
+   iPhone (Safari): Sdílet > Přidat na plochu.
+3) Aplikace se spustí na celou obrazovku a funguje i offline.
+Aktualizace: změň verzi v sw.js (const C='zl-v2') a nahraj znovu.

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f4d2b"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Zakázky"><title>Zakázkový list</title>
+<style>
+:root{--bg:#e4ece0;--card:#fbfdf9;--ink:#1d2a1f;--mut:#5b6b5e;--g:#1f4d2b;--gl:#cfdcc9;--in:#e9efe5;--bd:#b9c9b3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a14;--card:#1b261e;--ink:#e8f0e6;--mut:#9fb2a2;--g:#4c9a62;--gl:#2a3b2e;--in:#243228;--bd:#38503d}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.3 Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:84px}
+.wrap{max-width:480px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--gl)}
+header h1{font-size:20px;margin:0;letter-spacing:.5px}
+.logo{display:flex;flex-direction:column;align-items:center;color:var(--g);font-weight:700}
+.logo small{font-size:9px;letter-spacing:.3px}
+.top{display:flex;gap:10px;align-items:center;padding:12px 16px;flex-wrap:wrap}
+.top label{display:flex;align-items:center;gap:8px;font-weight:500}
+.top input{width:100px}
+.card{background:var(--card);margin:12px 14px;padding:14px;border-radius:16px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+h2{font-size:16px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.3px}
+.row{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:center;margin:8px 0}
+.row.h{grid-template-columns:1fr 84px}
+.row label{color:var(--ink)}
+input,textarea{width:100%;font:inherit;color:var(--ink);background:var(--in);border:1px solid var(--bd);border-radius:10px;padding:9px 10px}
+input:focus,textarea:focus{outline:2px solid var(--g)}
+textarea{min-height:96px;resize:vertical}
+.stav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.stav b{font-weight:500;margin-right:auto}
+.sw{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.sw input{display:none}
+.sw i{width:46px;height:26px;border-radius:13px;background:var(--bd);position:relative;transition:.2s}
+.sw i:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:var(--g)}
+.sw input:checked+i:after{left:23px}
+.sigs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sig span{display:flex;justify-content:space-between;font-weight:500;margin-bottom:4px}
+.sig button{border:0;background:none;color:var(--g);font:inherit;font-size:13px;cursor:pointer}
+canvas{width:100%;height:90px;background:var(--in);border:1px solid var(--bd);border-radius:10px;touch-action:none;display:block}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--g);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;background:none;border:0;color:#fff;font:inherit;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+nav svg{width:22px;height:22px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:20px;opacity:0;transition:.3s;pointer-events:none}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="logo"><svg width="92" height="34" viewBox="0 0 92 34"><rect width="92" height="26" rx="2" fill="currentColor"/><text x="46" y="20" font-size="19" font-weight="900" fill="#fff" text-anchor="middle" font-family="Arial Black,Arial,sans-serif">RK</text></svg><small>REEL KLADNO s.r.o.</small></div>
+<h1>ZAKÁZKOVÝ LIST</h1>
+</header>
+<div class="top">
+<label>Číslo ZL: <input id="cislo" inputmode="numeric"></label>
+<label>Ze dne: <input id="datum"></label>
+</div>
+
+<section class="card">
+<h2>Údaje o zákazníkovi</h2>
+<div class="row"><label for="objednavka">Objednávka č.:</label><input id="objednavka"></div>
+<div class="row"><label for="zakaznik">Zákazník:</label><input id="zakaznik"></div>
+<div class="row"><label for="adresa">Adresa:</label><input id="adresa"></div>
+<div class="stav"><b>Stav:</b>
+<span>Rozpracováno</span>
+<label class="sw"><input type="checkbox" id="hotovo"><i></i>Hotovo</label></div>
+</section>
+
+<section class="card">
+<h2>Technik a práce</h2>
+<div class="row"><label for="technik">Technik:</label><input id="technik"></div>
+<div class="row h"><label>Práce elektro (hod)</label><input id="elektro" inputmode="decimal"></div>
+<div class="row h"><label>Diagnostika, servis (hod)</label><input id="diagnostika" inputmode="decimal"></div>
+<div class="row h"><label>Programování (hod)</label><input id="programovani" inputmode="decimal"></div>
+<div class="row h"><label>Technická příprava (hod)</label><input id="priprava" inputmode="decimal"></div>
+<div class="row h"><label>Koordinace zakázky (hod)</label><input id="koordinace" inputmode="decimal"></div>
+<div class="row h"><label>Čas na dopravě (hod)</label><input id="cas" inputmode="decimal"></div>
+<div class="row h"><label>Doprava (km)</label><input id="doprava" inputmode="decimal" placeholder="km"></div>
+<label for="popis" style="display:block;margin:12px 0 4px">Popis práce, materiál, požadavky:</label>
+<textarea id="popis"></textarea>
+</section>
+
+<section class="card">
+<h2>Podpisy</h2>
+<div class="sigs">
+<div class="sig"><span>Technik: <button data-c="s1">smazat</button></span><canvas id="s1"></canvas></div>
+<div class="sig"><span>Zákazník: <button data-c="s2">smazat</button></span><canvas id="s2"></canvas></div>
+</div>
+</section>
+</div>
+
+<nav>
+<button id="save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h7V3M8 21v-7h8v7"/></svg>Uložit</button>
+<button id="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 3 3 10l7 3 3 7z"/><path d="m10 13 11-10"/></svg>Odeslat</button>
+</nav>
+<div id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const F=["cislo","datum","objednavka","zakaznik","adresa","technik","elektro","diagnostika","programovani","priprava","koordinace","cas","doprava","popis"];
+const KEY="zakazkovy-list-v1";
+const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800)};
+const d=new Date();$("datum").value=d.getDate()+"."+(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2);
+
+function pad(c){
+  const x=c.getContext("2d");let down=false;
+  const fit=()=>{const r=c.getBoundingClientRect(),k=devicePixelRatio||1,img=c.width?c.toDataURL():null;c.width=r.width*k;c.height=r.height*k;x.scale(k,k);x.lineWidth=2;x.lineCap="round";x.strokeStyle=getComputedStyle(document.body).color;c._k=k;
+    if(img){const i=new Image();i.onload=()=>x.drawImage(i,0,0,r.width,r.height);i.src=img}};
+  fit();
+  const p=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+  c.onpointerdown=e=>{down=true;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e));c._has=true};
+  c.onpointermove=e=>{if(down){x.lineTo(...p(e));x.stroke()}};
+  c.onpointerup=c.onpointercancel=()=>down=false;
+  c.clear=()=>{x.clearRect(0,0,c.width,c.height);c._has=false};
+}
+const S=[$("s1"),$("s2")];S.forEach(pad);
+document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>$(b.dataset.c).clear());
+
+function data(){const o={hotovo:$("hotovo").checked};F.forEach(f=>o[f]=$(f).value);o.s1=S[0]._has?S[0].toDataURL():"";o.s2=S[1]._has?S[1].toDataURL():"";return o}
+function load(){try{const o=JSON.parse(localStorage.getItem(KEY)||"null");if(!o)return;F.forEach(f=>{if(o[f]!=null)$(f).value=o[f]});$("hotovo").checked=!!o.hotovo;
+  [o.s1,o.s2].forEach((s,i)=>{if(!s)return;const im=new Image();im.onload=()=>{const c=S[i],r=c.getBoundingClientRect();c.getContext("2d").drawImage(im,0,0,r.width,r.height);c._has=true};im.src=s})}catch(e){}}
+load();
+
+$("save").onclick=()=>{try{localStorage.setItem(KEY,JSON.stringify(data()));toast("Uloženo")}catch(e){toast("Uložení se nepovedlo")}};
+$("send").onclick=()=>{
+  const o=data(),L=[["Číslo ZL",o.cislo],["Ze dne",o.datum],["Objednávka č.",o.objednavka],["Zákazník",o.zakaznik],["Adresa",o.adresa],["Stav",o.hotovo?"Hotovo":"Rozpracováno"],["Technik",o.technik],["Práce elektro (hod)",o.elektro],["Diagnostika, servis (hod)",o.diagnostika],["Programování (hod)",o.programovani],["Technická příprava (hod)",o.priprava],["Koordinace zakázky (hod)",o.koordinace],["Čas na dopravě (hod)",o.cas],["Doprava (km)",o.doprava],["Popis práce",o.popis]];
+  const body=L.map(a=>a[0]+": "+(a[1]||"")).join("\n");
+  const subj="Zakázkový list "+(o.cislo||"");
+  if(navigator.share){navigator.share({title:subj,text:body}).catch(()=>{})}
+  else location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
+};
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
