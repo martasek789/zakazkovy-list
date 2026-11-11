@@ -23,8 +23,8 @@ h2{font-size:16px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.3px}
 .row{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:center;margin:8px 0}
 .row.h{grid-template-columns:1fr 84px}
 .row label{color:var(--ink)}
-input,textarea{width:100%;font:inherit;color:var(--ink);background:var(--in);border:1px solid var(--bd);border-radius:10px;padding:9px 10px}
-input:focus,textarea:focus{outline:2px solid var(--g)}
+input,textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--in);border:1px solid var(--bd);border-radius:10px;padding:9px 10px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--g)}
 textarea{min-height:96px;resize:vertical}
 .stav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
 .stav b{font-weight:500;margin-right:auto}
@@ -68,7 +68,7 @@ nav svg{width:22px;height:22px}
 
 <section class="card">
 <h2>Technik a práce</h2>
-<div class="row"><label for="technik">Technik:</label><input id="technik"></div>
+<div class="row"><label for="technik">Technik:</label><select id="technik"><option value="">Vyberte technika…</option><option>Košťák</option><option>Suchý</option><option>Bárta</option></select></div>
 <div class="row h"><label>Práce elektro (hod)</label><input id="elektro" inputmode="decimal"></div>
 <div class="row h"><label>Diagnostika, servis (hod)</label><input id="diagnostika" inputmode="decimal"></div>
 <div class="row h"><label>Programování (hod)</label><input id="programovani" inputmode="decimal"></div>
@@ -121,13 +121,70 @@ function load(){try{const o=JSON.parse(localStorage.getItem(KEY)||"null");if(!o)
   [o.s1,o.s2].forEach((s,i)=>{if(!s)return;const im=new Image();im.onload=()=>{const c=S[i],r=c.getBoundingClientRect();c.getContext("2d").drawImage(im,0,0,r.width,r.height);c._has=true};im.src=s})}catch(e){}}
 load();
 
-$("save").onclick=()=>{try{localStorage.setItem(KEY,JSON.stringify(data()));toast("Uloženo")}catch(e){toast("Uložení se nepovedlo")}};
-$("send").onclick=()=>{
-  const o=data(),L=[["Číslo ZL",o.cislo],["Ze dne",o.datum],["Objednávka č.",o.objednavka],["Zákazník",o.zakaznik],["Adresa",o.adresa],["Stav",o.hotovo?"Hotovo":"Rozpracováno"],["Technik",o.technik],["Práce elektro (hod)",o.elektro],["Diagnostika, servis (hod)",o.diagnostika],["Programování (hod)",o.programovani],["Technická příprava (hod)",o.priprava],["Koordinace zakázky (hod)",o.koordinace],["Čas na dopravě (hod)",o.cas],["Doprava (km)",o.doprava],["Popis práce",o.popis]];
-  const body=L.map(a=>a[0]+": "+(a[1]||"")).join("\n");
-  const subj="Zakázkový list "+(o.cislo||"");
-  if(navigator.share){navigator.share({title:subj,text:body}).catch(()=>{})}
-  else location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
+const loadImg=s=>new Promise(r=>{if(!s)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});
+async function buildPDF(o){
+  const W=1240,H=1754,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+  const G="#1f4d2b",F="Arial,Helvetica,sans-serif";
+  g.fillStyle="#fff";g.fillRect(0,0,W,H);
+  g.fillStyle="#e4ece0";g.fillRect(0,0,W,170);
+  g.fillStyle=G;g.fillRect(70,40,200,76);g.fillStyle="#fff";g.font="900 54px "+F;g.textAlign="center";g.fillText("RK",170,98);
+  g.fillStyle=G;g.font="bold 19px "+F;g.fillText("REEL KLADNO s.r.o.",170,146);
+  g.textAlign="left";g.fillStyle="#1d2a1f";g.font="bold 54px "+F;g.fillText("ZAKÁZKOVÝ LIST",420,104);
+  const lab=(t,x,y)=>{g.fillStyle="#5b6b5e";g.font="27px "+F;g.fillText(t,x,y)};
+  const val=(t,x,y,mw)=>{g.fillStyle="#000";g.font="bold 29px "+F;g.fillText(t||"",x,y,mw)};
+  const ln=y=>{g.strokeStyle="#b9c9b3";g.lineWidth=2;g.beginPath();g.moveTo(70,y+12);g.lineTo(1170,y+12);g.stroke()};
+  const sec=(t,y)=>{g.fillStyle=G;g.font="bold 31px "+F;g.fillText(t.toUpperCase(),70,y);g.fillStyle=G;g.fillRect(70,y+14,1100,3)};
+  const row=(l,v,y)=>{lab(l,70,y);val(v,560,y,610);ln(y)};
+  lab("Číslo ZL:",70,245);val(o.cislo,230,245,300);lab("Ze dne:",640,245);val(o.datum,780,245,350);
+  sec("Údaje o zákazníkovi",320);
+  row("Objednávka č.:",o.objednavka,380);row("Zákazník:",o.zakaznik,436);row("Adresa:",o.adresa,492);
+  lab("Stav:",70,548);g.fillStyle=o.hotovo?G:"#b26a00";g.font="bold 29px "+F;g.fillText(o.hotovo?"HOTOVO":"ROZPRACOVÁNO",560,548);ln(548);
+  sec("Technik a práce",630);
+  row("Technik:",o.technik,690);
+  [["Práce elektro (hod)","elektro"],["Diagnostika, servis (hod)","diagnostika"],["Programování (hod)","programovani"],["Technická příprava (hod)","priprava"],["Koordinace zakázky (hod)","koordinace"],["Čas na dopravě (hod)","cas"],["Doprava (km)","doprava"]].forEach((a,i)=>row(a[0],o[a[1]],746+i*54));
+  lab("Popis práce, materiál, požadavky:",70,1150);
+  g.strokeStyle="#b9c9b3";g.lineWidth=2;g.strokeRect(70,1170,1100,200);
+  g.fillStyle="#000";g.font="28px "+F;
+  let y=1210;const lines=[];
+  String(o.popis||"").split("\n").forEach(p=>{let l="";p.split(" ").forEach(w=>{const t=l?l+" "+w:w;if(g.measureText(t).width>1060&&l){lines.push(l);l=w}else l=t});lines.push(l)});
+  lines.slice(0,5).forEach(t=>{g.fillText(t,86,y);y+=36});
+  sec("Podpisy",1430);
+  lab("Technik:",70,1490);lab("Zákazník:",650,1490);
+  g.strokeRect(70,1505,520,170);g.strokeRect(650,1505,520,170);
+  const imgs=await Promise.all([loadImg(o.s1),loadImg(o.s2)]);
+  imgs.forEach((im,i)=>{if(!im)return;const t=document.createElement("canvas");t.width=im.width;t.height=im.height;const x=t.getContext("2d");x.drawImage(im,0,0);x.globalCompositeOperation="source-in";x.fillStyle="#111";x.fillRect(0,0,t.width,t.height);
+    const bx=i?650:70,r=Math.min(500/t.width,150/t.height);g.drawImage(t,bx+10,1515,t.width*r,t.height*r)});
+  g.fillStyle="#5b6b5e";g.font="20px "+F;g.fillText("Vytvořeno "+new Date().toLocaleString("cs-CZ"),70,1720);
+  const b=atob(c.toDataURL("image/jpeg",.92).split(",")[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+  return mkPdf(u,W,H);
+}
+function mkPdf(jpg,w,h){
+  const e=new TextEncoder(),parts=[],off=[];let len=0;
+  const add=b=>{if(typeof b==="string")b=e.encode(b);parts.push(b);len+=b.length};
+  const obj=(n,s)=>{off[n]=len;add(n+" 0 obj\n"+s+"\nendobj\n")};
+  add("%PDF-1.4\n");
+  obj(1,"<</Type/Catalog/Pages 2 0 R>>");
+  obj(2,"<</Type/Pages/Kids[3 0 R]/Count 1>>");
+  obj(3,"<</Type/Page/Parent 2 0 R/MediaBox[0 0 595.28 841.89]/Resources<</XObject<</I 4 0 R>>>>/Contents 5 0 R>>");
+  off[4]=len;add("4 0 obj\n<</Type/XObject/Subtype/Image/Width "+w+"/Height "+h+"/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length "+jpg.length+">>\nstream\n");add(jpg);add("\nendstream\nendobj\n");
+  const cs="q 595.28 0 0 841.89 0 0 cm /I Do Q";
+  obj(5,"<</Length "+cs.length+">>\nstream\n"+cs+"\nendstream");
+  const x=len;let t="xref\n0 6\n0000000000 65535 f \n";
+  for(let i=1;i<=5;i++)t+=String(off[i]).padStart(10,"0")+" 00000 n \n";
+  add(t+"trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n"+x+"\n%%EOF");
+  return new Blob(parts,{type:"application/pdf"});
+}
+const fname=o=>"Zakazkovy-list-"+(o.cislo||"bez-cisla").replace(/[^\w-]+/g,"_")+".pdf";
+function dl(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+$("save").onclick=async()=>{
+  try{localStorage.setItem(KEY,JSON.stringify(data()))}catch(e){}
+  try{const o=data();dl(await buildPDF(o),fname(o));toast("Uloženo, PDF staženo")}catch(e){toast("PDF se nepodařilo vytvořit")}
+};
+$("send").onclick=async()=>{
+  try{const o=data(),blob=await buildPDF(o),f=new File([blob],fname(o),{type:"application/pdf"}),subj="Zakázkový list "+(o.cislo||"");
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:subj,text:subj})}catch(e){}}
+    else{dl(blob,fname(o));toast("PDF staženo, přilož ho k e-mailu");setTimeout(()=>{location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent("V příloze zakázkový list "+(o.cislo||"")+".")},1200)}
+  }catch(e){toast("PDF se nepodařilo vytvořit")}
 };
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
