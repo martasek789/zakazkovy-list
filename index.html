@@ -42,6 +42,7 @@ canvas{width:100%;height:90px;background:var(--in);border:1px solid var(--bd);bo
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--g);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px))}
 nav button{flex:1;background:none;border:0;color:#fff;font:inherit;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
 nav svg{width:22px;height:22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip input{display:none}.chip span{display:inline-block;padding:8px 12px;border:1px solid var(--bd);border-radius:18px;background:var(--in);cursor:pointer;user-select:none}.chip input:checked+span{background:var(--g);color:#fff;border-color:var(--g)}
 .pw{position:relative}.pw canvas{cursor:pointer}
 .pw .hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;font-style:normal;pointer-events:none}
 .pw.has .hint{display:none}
@@ -79,7 +80,7 @@ nav svg{width:22px;height:22px}
 
 <section class="card">
 <h2>Technik a práce</h2>
-<div class="row"><label for="technik">Technik:</label><select id="technik"><option value="">Vyberte technika…</option><option>Košťák</option><option>Suchý</option><option>Bárta</option></select></div>
+<div class="row"><label>Technik:</label><div id="technik" class="chips"><label class="chip"><input type="checkbox" value="Košťák"><span>Košťák</span></label><label class="chip"><input type="checkbox" value="Suchý"><span>Suchý</span></label><label class="chip"><input type="checkbox" value="Bárta"><span>Bárta</span></label></div></div>
 <div class="row h"><label>Práce elektro (hod)</label><input id="elektro" inputmode="decimal"></div>
 <div class="row h"><label>Diagnostika, servis (hod)</label><input id="diagnostika" inputmode="decimal"></div>
 <div class="row h"><label>Programování (hod)</label><input id="programovani" inputmode="decimal"></div>
@@ -110,7 +111,7 @@ nav svg{width:22px;height:22px}
 
 <script>
 const $=id=>document.getElementById(id);
-const F=["cislo","datum","zakaznik","adresa","technik","elektro","diagnostika","programovani","priprava","koordinace","cas","doprava","popis"];
+const F=["cislo","datum","zakaznik","adresa","elektro","diagnostika","programovani","priprava","koordinace","cas","doprava","popis"];
 const KEY="zakazkovy-list-v1";
 const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800)};
 const d=new Date();$("datum").value=d.getDate()+"."+(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2);
@@ -140,7 +141,7 @@ $("ovclear").onclick=()=>{bx.clearRect(0,0,big.width,big.height);bigHas=false};
 $("ovcancel").onclick=closeSig;
 $("ovok").onclick=()=>{const u=bigHas?cropSig(big):"";S[cur]._full=u;S[cur]._has=!!u;prev(cur);closeSig()};
 addEventListener("resize",()=>{if($("ov").classList.contains("on"))sizeBig();else S.forEach((c,i)=>prev(i))});
-function data(){const o={hotovo:$("hotovo").checked};F.forEach(f=>o[f]=$(f).value);o.s1=S[0]._has?S[0]._full:"";o.s2=S[1]._has?S[1]._full:"";return o}
+function data(){const o={hotovo:$("hotovo").checked};F.forEach(f=>o[f]=$(f).value);o.technik=[...document.querySelectorAll("#technik input:checked")].map(i=>i.value).join(", ");o.s1=S[0]._has?S[0]._full:"";o.s2=S[1]._has?S[1]._full:"";return o}
 $("new").onclick=()=>{if(confirm("Vymazat formulář a začít nový list?"))location.reload()};
 
 const loadImg=s=>new Promise(r=>{if(!s)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});
