@@ -43,6 +43,7 @@ nav{position:fixed;left:0;right:0;bottom:0;background:var(--g);display:flex;padd
 nav button{flex:1;background:none;border:0;color:#fff;font:inherit;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
 nav svg{width:22px;height:22px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}.chip input{display:none}.chip span{display:inline-block;padding:8px 12px;border:1px solid var(--bd);border-radius:18px;background:var(--in);cursor:pointer;user-select:none}.chip input:checked+span{background:var(--g);color:#fff;border-color:var(--g)}
+.tb{border:1px solid var(--bd);border-left:4px solid var(--g);border-radius:10px;padding:4px 10px 6px;margin:10px 0}.tb h3{margin:6px 0 2px;font-size:15px;color:var(--g)}
 .pw{position:relative}.pw canvas{cursor:pointer}
 .pw .hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;font-style:normal;pointer-events:none}
 .pw.has .hint{display:none}
@@ -80,13 +81,8 @@ nav svg{width:22px;height:22px}
 
 <section class="card">
 <h2>Technik a práce</h2>
-<div class="row"><label>Technik:</label><div id="technik" class="chips"><label class="chip"><input type="checkbox" value="Košťák"><span>Košťák</span></label><label class="chip"><input type="checkbox" value="Suchý"><span>Suchý</span></label><label class="chip"><input type="checkbox" value="Bárta"><span>Bárta</span></label></div></div>
-<div class="row h"><label>Práce elektro (hod)</label><input id="elektro" inputmode="decimal"></div>
-<div class="row h"><label>Diagnostika, servis (hod)</label><input id="diagnostika" inputmode="decimal"></div>
-<div class="row h"><label>Programování (hod)</label><input id="programovani" inputmode="decimal"></div>
-<div class="row h"><label>Technická příprava (hod)</label><input id="priprava" inputmode="decimal"></div>
-<div class="row h"><label>Koordinace zakázky (hod)</label><input id="koordinace" inputmode="decimal"></div>
-<div class="row h"><label>Čas na dopravě (hod)</label><input id="cas" inputmode="decimal"></div>
+<div class="row"><label>Technik:</label><div id="technik" class="chips"></div></div>
+<div id="tblocks"></div>
 <div class="row h"><label>Doprava (km)</label><input id="doprava" inputmode="decimal" placeholder="km"></div>
 <label for="popis" style="display:block;margin:12px 0 4px">Popis práce, materiál, požadavky:</label>
 <textarea id="popis"></textarea>
@@ -111,7 +107,7 @@ nav svg{width:22px;height:22px}
 
 <script>
 const $=id=>document.getElementById(id);
-const F=["cislo","datum","zakaznik","adresa","elektro","diagnostika","programovani","priprava","koordinace","cas","doprava","popis"];
+const F=["cislo","datum","zakaznik","adresa","doprava","popis"];
 const KEY="zakazkovy-list-v1";
 const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800)};
 const d=new Date();$("datum").value=d.getDate()+"."+(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2);
@@ -141,7 +137,16 @@ $("ovclear").onclick=()=>{bx.clearRect(0,0,big.width,big.height);bigHas=false};
 $("ovcancel").onclick=closeSig;
 $("ovok").onclick=()=>{const u=bigHas?cropSig(big):"";S[cur]._full=u;S[cur]._has=!!u;prev(cur);closeSig()};
 addEventListener("resize",()=>{if($("ov").classList.contains("on"))sizeBig();else S.forEach((c,i)=>prev(i))});
-function data(){const o={hotovo:$("hotovo").checked};F.forEach(f=>o[f]=$(f).value);o.technik=[...document.querySelectorAll("#technik input:checked")].map(i=>i.value).join(", ");o.s1=S[0]._has?S[0]._full:"";o.s2=S[1]._has?S[1]._full:"";return o}
+const TECH=["Košťák","Suchý","Bárta","Štýbr","Jursík"];
+const HF=[["elektro","Práce elektro (hod)"],["diagnostika","Diagnostika, servis (hod)"],["programovani","Programování (hod)"],["priprava","Technická příprava (hod)"],["koordinace","Koordinace zakázky (hod)"],["cas","Čas na dopravě (hod)"]];
+TECH.forEach((n,i)=>{
+  const l=document.createElement("label");l.className="chip";l.innerHTML='<input type="checkbox" data-i="'+i+'"><span>'+n+'</span>';$("technik").appendChild(l);
+  const b=document.createElement("div");b.className="tb";b.hidden=true;
+  b.innerHTML='<h3>'+n+'</h3>'+HF.map(f=>'<div class="row h"><label>'+f[1]+'</label><input data-t="'+i+'" data-f="'+f[0]+'" inputmode="decimal"></div>').join("");
+  $("tblocks").appendChild(b);
+  l.querySelector("input").onchange=e=>{b.hidden=!e.target.checked};
+});
+function data(){const o={hotovo:$("hotovo").checked};F.forEach(f=>o[f]=$(f).value);o.technici=TECH.map((n,i)=>{const t={jmeno:n};HF.forEach(f=>t[f[0]]=document.querySelector('[data-t="'+i+'"][data-f="'+f[0]+'"]').value);return t}).filter((t,i)=>document.querySelector('#technik input[data-i="'+i+'"]').checked);o.technik=o.technici.map(t=>t.jmeno).join(", ");o.s1=S[0]._has?S[0]._full:"";o.s2=S[1]._has?S[1]._full:"";return o}
 $("new").onclick=()=>{if(confirm("Vymazat formulář a začít nový list?"))location.reload()};
 
 const loadImg=s=>new Promise(r=>{if(!s)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});
@@ -163,8 +168,10 @@ async function buildPDF(o){
   row("Zákazník:",o.zakaznik,410);row("Adresa:",o.adresa,466);
   lab("Stav:",70,522);g.fillStyle=o.hotovo?G:"#b26a00";g.font="bold 29px "+F;g.fillText(o.hotovo?"HOTOVO":"ROZPRACOVÁNO",560,522);ln(522);
   sec("Technik a práce",600);
-  row("Technik:",o.technik,660);
-  [["Práce elektro (hod)","elektro"],["Diagnostika, servis (hod)","diagnostika"],["Programování (hod)","programovani"],["Technická příprava (hod)","priprava"],["Koordinace zakázky (hod)","koordinace"],["Čas na dopravě (hod)","cas"],["Doprava (km)","doprava"]].forEach((a,i)=>row(a[0],o[a[1]],716+i*54));
+  const T=o.technici||[],cw=Math.min(150,Math.floor(560/Math.max(T.length,1))),cx=j=>1170-(T.length-1-j)*cw;
+  lab("Technik:",70,660);T.forEach((t,j)=>{g.fillStyle="#000";g.font="bold 26px "+F;g.textAlign="right";g.fillText(t.jmeno,cx(j),660)});g.textAlign="left";ln(660);
+  HF.forEach((a,i)=>{const yy=716+i*50;lab(a[1],70,yy);T.forEach((t,j)=>{g.fillStyle="#000";g.font="bold 29px "+F;g.textAlign="right";g.fillText(t[a[0]]||"",cx(j),yy)});g.textAlign="left";ln(yy)});
+  row("Doprava (km)",o.doprava,716+HF.length*50);
   lab("Popis práce, materiál, požadavky:",70,1120);
   g.strokeStyle="#b9c9b3";g.lineWidth=2;g.strokeRect(70,1140,1100,200);
   g.fillStyle="#000";g.font="28px "+F;
@@ -200,27 +207,17 @@ function mkPdf(jpg,w,h){
 const fname=o=>"Zakazkovy-list-"+(o.cislo||"bez-cisla").replace(/[^\w-]+/g,"_")+".pdf";
 function dl(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
 const PRIJEMCE="";
-const CSVH=["CisloZL","Datum","Objednavka","Zakaznik","Adresa","Stav","Technik","PraceElektro","Diagnostika","Programovani","TechPriprava","Koordinace","CasDoprava","DopravaKm","Popis","Vytvoreno"];
-const cTxt=v=>String(v||"").replace(/[\r\n]+/g," / ").replace(/;/g,",").replace(/"/g,"'").trim();
-const cNum=v=>String(v||"").trim().replace(".",",");
-function cDat(s){const m=String(s||"").trim().match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{2,4})$/);if(!m)return cTxt(s);let y=+m[3];if(y<100)y+=2000;return m[1].padStart(2,"0")+"."+m[2].padStart(2,"0")+"."+y}
-function buildCSV(o){
-  const d=new Date(),p=n=>String(n).padStart(2,"0"),now=p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes());
-  const r=[cTxt(o.cislo),cDat(o.datum),cTxt(o.objednavka),cTxt(o.zakaznik),cTxt(o.adresa),o.hotovo?"Hotovo":"Rozpracováno",cTxt(o.technik),cNum(o.elektro),cNum(o.diagnostika),cNum(o.programovani),cNum(o.priprava),cNum(o.koordinace),cNum(o.cas),cNum(o.doprava),cTxt(o.popis),now];
-  return new Blob(["\uFEFF"+CSVH.join(";")+"\r\n"+r.join(";")+"\r\n"],{type:"text/csv;charset=utf-8"});
-}
-const csvName=n=>n.replace(/\.pdf$/,".csv");
 $("save").onclick=async()=>{
     try{const o=data(),n=fname(o),pdf=await buildPDF(o);dl(pdf,n);setTimeout(()=>dl(window._jpg,n.replace(/\.pdf$/,".jpg")),500);toast("Staženo: PDF + obrázek")}catch(e){toast("Export se nepodařil")}
 };
 $("send").onclick=async()=>{
   try{
-    const o=data(),n=fname(o),pdf=await buildPDF(o),csv=buildCSV(o),subj="Zakázkový list "+(o.cislo||"");
-    const fs=[new File([pdf],n,{type:"application/pdf"}),new File([csv],csvName(n),{type:"text/csv"})];
+    const o=data(),n=fname(o),pdf=await buildPDF(o),subj="Zakázkový list "+(o.cislo||"");
+    const f=new File([pdf],n,{type:"application/pdf"});
     let ok=false;
-    if(navigator.canShare){for(const set of [fs,[fs[0]]]){if(navigator.canShare({files:set})){try{await navigator.share({files:set,title:subj,text:subj})}catch(e){}ok=true;break}}}
-    if(!ok){dl(pdf,n);setTimeout(()=>dl(csv,csvName(n)),500);toast("Soubory staženy, přilož je k e-mailu");
-      setTimeout(()=>{location.href="mailto:"+PRIJEMCE+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent("V příloze zakázkový list "+(o.cislo||"")+" (PDF a CSV pro import do Accessu).")},1500)}
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:subj,text:subj})}catch(e){}ok=true}
+    if(!ok){dl(pdf,n);toast("PDF staženo, přilož ho k e-mailu");
+      setTimeout(()=>{location.href="mailto:"+PRIJEMCE+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent("V příloze zakázkový list "+(o.cislo||"")+".")},1500)}
   }catch(e){toast("Odeslání se nepodařilo")}
 };
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
